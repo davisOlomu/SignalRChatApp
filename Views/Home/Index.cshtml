@@ -1,28 +1,99 @@
 ﻿@page
-<div class="container">
-    <div class="row p-1">
-        <div class="col-1">User</div>
-        <div class="col-5"><input type="text" id="userInput" /></div>
+@*  *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalR Chat Application</title>
+    <style>
+      /*   body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        } */
+
+        #chatBox {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+
+            #chatBox ul {
+                list-style-type: none;
+                padding-left: 0;
+            }
+
+            #chatBox li {
+                padding: 5px 0;
+                margin-bottom: 10px;
+            }
+
+        input[type="text"], button {
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"] {
+            width: 50%;
+        }
+
+        button {
+            width: 30%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="chatBox">
+        <ul id="messagesList"></ul>
     </div>
-    <div class="row p-1">
-        <div class="col-1">Message</div>
-        <div class="col-5"><input type="text" class="w-100" id="messageInput" /></div>
-    </div>
-    <div class="row p-1">
-        <div class="col-6 text-end">
-            <input type="button" id="sendButton" value="Send Message" />
-        </div>
-    </div>
-    <div class="row p-1">
-        <div class="col-6">
-            <hr />
-        </div>
-    </div>
-    <div class="row p-1">
-        <div class="col-6">
-            <ul id="messagesList"></ul>
-        </div>
-    </div>
-</div>
-<script src="~/lib/microsoft/signalr/dist/browser/signalr.js"></script>
-<script src="~/js/chat.js"></script>
+    <input type="text" id="userInput" placeholder="Enter your username" />
+    <input type="text" id="messageInput" placeholder="Enter your message" />
+    <br/>
+    <button id="sendButton" disabled>Send Message</button>
+
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.js"></script>
+    <script src="~/js/chat.js"></script>
+    <script type="text/javascript">
+        // Initialize SignalR connection
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chathub") // Make sure this matches the URL in your SignalR setup
+            .build();
+
+        // Disable the send button until connection is established
+        document.getElementById("sendButton").disabled = true;
+
+        // Receive message from the SignalR hub
+        connection.on("ReceiveMessage", function (user, message) {
+            const li = document.createElement("li");
+            document.getElementById("messagesList").appendChild(li);
+            li.textContent = `${user}: ${message}`;
+        });
+
+        // Start the connection and enable the send button when connected
+        connection.start().then(function () {
+            document.getElementById("sendButton").disabled = false;
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        // Handle the send button click
+        document.getElementById("sendButton").addEventListener("click", function (event) {
+            const user = document.getElementById("userInput").value;
+            const message = document.getElementById("messageInput").value;
+            connection.invoke("SendMessage", user, message).catch(function (err) {
+                return console.error(err.toString());
+            });
+            event.preventDefault();
+        });
+    </script>
+
+</body>
+</html>
